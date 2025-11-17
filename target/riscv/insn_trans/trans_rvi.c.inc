@@ -1221,3 +1221,10 @@ static bool trans_csrrci(DisasContext *ctx, arg_csrrci * a)
                              ctx->zero, ctx->zero, mask, ctx->zero);
     }
 }
+
+
+static bool trans_dma(DisasContext *ctx, arg_dma *a)
+{
+    gen_helper_dma(tcg_env, tcg_constant_tl(a->rs1), tcg_constant_tl(a->rs2), tcg_constant_tl(a->rd));
+    return true;
+}

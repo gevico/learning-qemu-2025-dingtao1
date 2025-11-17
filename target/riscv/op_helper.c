@@ -28,6 +28,33 @@
 #include "exec/tlb-flags.h"
 #include "trace.h"
 
+
+void helper_dma(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_ulong rd){
+    hwaddr src_addr = env->gpr[rs1];
+    hwaddr dst_addr = env->gpr[rd];
+    uint32_t dma_size = env->gpr[rs2];
+    if(dma_size == 0){
+        dma_size = 8;
+    }
+    else if(dma_size == 1){
+        dma_size = 16;
+    }
+    else if(dma_size == 2){
+        dma_size = 32;
+    }
+    else{
+        //error
+    }
+    uint32_t temp_val;
+    for(int i = 0; i < dma_size; i++){
+        for(int j = 0; j < dma_size; j++){
+            cpu_physical_memory_read(src_addr + (i * dma_size + j) * 4, &temp_val, 4);
+            cpu_physical_memory_write(dst_addr + (i + j * dma_size) * 4, &temp_val, 4);
+        }
+    }
+
+}
+
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
                                       RISCVException exception,
