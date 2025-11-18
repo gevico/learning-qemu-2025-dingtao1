@@ -55,6 +55,32 @@ void helper_dma(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_u
 
 }
 
+void helper_sort(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_ulong rd){
+    hwaddr array_addr = env->gpr[rs1];
+    uint32_t array_size = env->gpr[rs2];
+    uint32_t sort_num = env->gpr[rd];
+    uint32_t min_val, min_index, temp_val;
+    if(array_size < sort_num){
+        sort_num = array_size;
+    }
+    for(int i = 0; i < sort_num - 1; i++){
+        min_index = i;
+        cpu_physical_memory_read(array_addr + (i * 4), &min_val, 4);
+        for(int j = i; j < sort_num; j++){
+            cpu_physical_memory_read(array_addr + (j * 4), &temp_val, 4);
+            if(temp_val < min_val){
+                min_index = j;
+                min_val = temp_val;
+            }
+        }
+        if(min_index != i){
+            cpu_physical_memory_read(array_addr + i * 4, &temp_val, 4);
+            cpu_physical_memory_write(array_addr + min_index * 4, &temp_val, 4);
+            cpu_physical_memory_write(array_addr + i * 4, &min_val, 4);
+        }
+    }
+}
+
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
                                       RISCVException exception,

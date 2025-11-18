@@ -1228,3 +1228,10 @@ static bool trans_dma(DisasContext *ctx, arg_dma *a)
     gen_helper_dma(tcg_env, tcg_constant_tl(a->rs1), tcg_constant_tl(a->rs2), tcg_constant_tl(a->rd));
     return true;
 }
+
+
+static bool trans_sort(DisasContext *ctx, arg_sort *a)
+{
+    gen_helper_sort(tcg_env, tcg_constant_tl(a->rs1), tcg_constant_tl(a->rs2), tcg_constant_tl(a->rd));
+    return true;
+}
