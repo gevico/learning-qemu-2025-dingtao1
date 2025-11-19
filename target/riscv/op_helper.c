@@ -81,6 +81,33 @@ void helper_sort(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_
     }
 }
 
+void helper_crush(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_ulong rd){
+    hwaddr src_addr = env->gpr[rs1];
+    hwaddr dst_addr = env->gpr[rd];
+    uint32_t array_size = env->gpr[rs2];
+    uint8_t crush_val, low_val, high_val;
+    for(int i = 0; i < array_size; i += 2){
+        cpu_physical_memory_read(src_addr + i, &low_val, 1);
+        cpu_physical_memory_read(src_addr + i + 1, &high_val, 1);
+        crush_val = (high_val << 4) | low_val;
+        cpu_physical_memory_write(dst_addr + i / 2, &crush_val, 1);
+    }
+}
+
+void helper_expand(CPURISCVState *env, target_ulong rs1, target_ulong rs2, target_ulong rd){
+    hwaddr src_addr = env->gpr[rs1];
+    hwaddr dst_addr = env->gpr[rd];
+    uint32_t array_size = env->gpr[rs2];
+    uint8_t expand_val, low_val, high_val;
+    for(int i = 0; i < array_size; i ++){
+        cpu_physical_memory_read(src_addr + i, &expand_val, 1);
+        low_val = expand_val & 0x0F;
+        high_val = (expand_val >> 4) & 0x0F;
+        cpu_physical_memory_write(dst_addr + i * 2, &low_val, 1);
+        cpu_physical_memory_write(dst_addr + i * 2 + 1, &high_val, 1);
+    }
+}
+
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
                                       RISCVException exception,
