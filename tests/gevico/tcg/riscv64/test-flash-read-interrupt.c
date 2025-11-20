@@ -16,7 +16,7 @@
 #define LOG_LEVEL_DBG  4
 
 /* Current log level for this file */
-#define CURRENT_LOG_LEVEL LOG_LEVEL_INF
+#define CURRENT_LOG_LEVEL LOG_LEVEL_DBG
 
 /* ANSI color codes */
 #define COLOR_RESET   "\033[0m"
@@ -132,7 +132,7 @@ void spi0_interrupt_handler(void)
 {
     uint32_t sr = REG32(SPI_SR_OFFSET);
     uint32_t cr2 = REG32(SPI_CR2_OFFSET);
-    
+    LOG_INF("spi0_interrupt_handler");
     spi_state.interrupt_count++;
     
     /* Check for error conditions first */

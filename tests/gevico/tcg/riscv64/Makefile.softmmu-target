@@ -27,6 +27,7 @@ define QEMU_OPTS
 -display none -semihosting \
 -serial stdio \
 -d int \
+-D qemu.log \
 -device loader,file=$(2) \
 -blockdev driver=file,filename=disk0.img,node-name=flash0 \
 -blockdev driver=file,filename=disk1.img,node-name=flash1 \

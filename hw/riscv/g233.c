@@ -34,7 +34,9 @@
 #include "hw/intc/sifive_plic.h"
 #include "hw/misc/unimp.h"
 #include "hw/char/pl011.h"
-
+#include "hw/ssi/g233_spi.h"
+#include "system/block-backend.h"
+#include "hw/ssi/ssi.h"
 /* TODO: you need include some header files */
 
 static const MemMapEntry g233_memmap[] = {
@@ -45,6 +47,7 @@ static const MemMapEntry g233_memmap[] = {
     [G233_DEV_GPIO0] =    { 0x10012000,     0x1000 },
     [G233_DEV_PWM0] =     { 0x10015000,     0x1000 },
     [G233_DEV_DRAM] =     { 0x80000000, 0x40000000 },
+    [G233_DEV_SPI0] =     { 0x10018000,     0x1000 },
 };
 
 static void g233_soc_init(Object *obj)
@@ -62,6 +65,10 @@ static void g233_soc_init(Object *obj)
 
     // gpio
     object_initialize_child(obj, "sifive.gpio0", &s->gpio, TYPE_SIFIVE_GPIO);
+
+    // g233_spi
+    s->g233_spi = g_new0(G233SpiState, 1);
+    object_initialize_child(obj, "g233.spi0", s->g233_spi, TYPE_G233_SPI);
 }
 
 static void g233_soc_realize(DeviceState *dev, Error **errp)
@@ -70,6 +77,11 @@ static void g233_soc_realize(DeviceState *dev, Error **errp)
     G233SoCState *s = RISCV_G233_SOC(dev);
     MemoryRegion *sys_mem = get_system_memory();
     const MemMapEntry *memmap = g233_memmap;
+
+    DeviceState *flash0, *flash1;
+    BlockBackend *blk;
+    BlockDriverState *bs;
+    qemu_irq flash_cs;
 
     /* CPUs realize */
 
@@ -131,6 +143,50 @@ static void g233_soc_realize(DeviceState *dev, Error **errp)
     /* SiFive.PWM0 */
     create_unimplemented_device("riscv.g233.pwm0",
         memmap[G233_DEV_PWM0].base, memmap[G233_DEV_PWM0].size);
+
+    
+    // g233_spi realize
+    if (!sysbus_realize(SYS_BUS_DEVICE(s->g233_spi), errp)) {
+        return;
+    }
+    // Map g233_spi registers
+    sysbus_mmio_map(SYS_BUS_DEVICE(s->g233_spi), 0, memmap[G233_DEV_SPI0].base);
+
+    // Connect g233_spi interrupts to the PLIC
+    sysbus_connect_irq(SYS_BUS_DEVICE(s->g233_spi), 0,
+                       qdev_get_gpio_in(DEVICE(s->plic), G233_SPI0_IRQ));
+
+
+
+    flash0 = qdev_new("w25x16");
+    bs = bdrv_lookup_bs(NULL, "flash0", &error_abort);
+    if (!bs) {
+        blk = NULL;
+        error_report("Cannot find block node 'flash0'");
+    } else{
+        blk = blk_new(qemu_get_aio_context(), 0, BLK_PERM_ALL);
+        blk_insert_bs(blk, bs, &error_abort);
+    }
+    qdev_prop_set_drive_err(flash0, "drive", blk, &error_abort);
+    qdev_prop_set_uint8(flash0, "cs", 0);
+    qdev_realize(flash0, BUS(s->g233_spi->spi), &error_abort);
+    flash_cs = qdev_get_gpio_in_named(flash0, SSI_GPIO_CS, 0);
+    sysbus_connect_irq(SYS_BUS_DEVICE(s->g233_spi), 1, flash_cs);
+
+    flash1 = qdev_new("w25x32");
+    bs = bdrv_lookup_bs(NULL, "flash1", &error_abort);
+    if (!bs) {
+        blk = NULL;
+        error_report("Cannot find block node 'flash1'");
+    } else{
+        blk = blk_new(qemu_get_aio_context(), 0, BLK_PERM_ALL);
+        blk_insert_bs(blk, bs, &error_abort);
+    }
+    qdev_prop_set_drive_err(flash1, "drive", blk, &error_abort);
+    qdev_prop_set_uint8(flash1, "cs", 1);
+    qdev_realize(flash1, BUS(s->g233_spi->spi), &error_abort);
+    flash_cs = qdev_get_gpio_in_named(flash1, SSI_GPIO_CS, 0);
+    sysbus_connect_irq(SYS_BUS_DEVICE(s->g233_spi), 2, flash_cs); 
 
 }
 

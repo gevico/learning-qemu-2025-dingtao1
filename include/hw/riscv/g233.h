@@ -24,7 +24,7 @@
 #include "hw/boards.h"
 #include "hw/riscv/riscv_hart.h"
 #include "hw/gpio/sifive_gpio.h"
-
+#include "hw/ssi/g233_spi.h"
 #define TYPE_RISCV_G233_SOC "riscv.gevico.g233.soc"
 #define RISCV_G233_SOC(obj) \
     OBJECT_CHECK(G233SoCState, (obj), TYPE_RISCV_G233_SOC)
@@ -40,6 +40,7 @@ typedef struct G233SoCState {
     DeviceState *pwm0;
     SIFIVEGPIOState gpio;
     MemoryRegion mask_rom;
+    G233SpiState *g233_spi;
 } G233SoCState;
 
 #define TYPE_RISCV_G233_MACHINE MACHINE_TYPE_NAME("g233")
@@ -62,12 +63,14 @@ enum {
     G233_DEV_GPIO0,
     G233_DEV_UART0, /* PL011 */
     G233_DEV_PWM0,
-    G233_DEV_DRAM
+    G233_DEV_DRAM,
+    G233_DEV_SPI0,
 };
 
 enum {
     G233_UART0_IRQ  = 1,
     G233_PWM0_IRQ   = 2,
+    G233_SPI0_IRQ  = 3,
     G233_GPIO0_IRQ0 = 8
 };
 
