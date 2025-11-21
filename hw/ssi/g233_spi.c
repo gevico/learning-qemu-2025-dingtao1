@@ -19,6 +19,9 @@ static void g233_spi_flush_txfifo(G233SpiState *s)
         if(!fifo8_is_full(&s->rx_fifo)){
             fifo8_push(&s->rx_fifo, rx);
         }
+        else{
+            s->regs[G233_SPI_SR] |= (1 << 3);
+        }
         qemu_log("G233_SPI: write 0x%02x to SPI, read 0x%02x\n", tx, rx);
     }
 
@@ -177,8 +180,8 @@ static void g233_spi_realize(DeviceState *dev, Error **errp)
     memory_region_init_io(&s->mmio, OBJECT(s), &g233_spi_ops, s, TYPE_G233_SPI, 0x100);
     sysbus_init_mmio(sbd, &s->mmio);
     
-    fifo8_create(&s->rx_fifo, 8);
-    fifo8_create(&s->tx_fifo, 8);
+    fifo8_create(&s->rx_fifo, 1);
+    fifo8_create(&s->tx_fifo, 1);
 
     s->regs[G233_SPI_CR1] = 0x00000000;
     s->regs[G233_SPI_CR2] = 0x00000000;
