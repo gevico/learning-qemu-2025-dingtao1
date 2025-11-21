@@ -132,6 +132,7 @@ static void g233_spi_write(void *opaque, hwaddr addr, uint64_t value, unsigned i
             s->regs[G233_SPI_SR] &= ~(1 << 3);
         }
         break;
+        
     case G233_SPI_DR:
         value = value & 0x000000FF;
         if(!fifo8_is_full(&s->tx_fifo)){
